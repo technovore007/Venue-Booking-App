@@ -3,7 +3,6 @@ import customtkinter as ctk
 import bcrypt
 from tkinter import messagebox
 
-
 # Function to hash the password
 def hash_password():
     password = entry_password.get()  # Get the password input
@@ -32,10 +31,12 @@ def hash_password():
         # Show the "Copy to Clipboard" button
         button_copy.pack(pady=10)
 
+        # Start the fade-in effect for both the label and button
+        fade_in_label_and_button(0)
+
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
         progress_bar.stop()
-
 
 # Function to copy the hashed password to clipboard
 def copy_to_clipboard():
@@ -46,6 +47,28 @@ def copy_to_clipboard():
     else:
         messagebox.showwarning("No Hash", "Please hash a password first.")
 
+# Helper function to implement the fade-in effect on the label and button
+def fade_in_label_and_button(count):
+    if count < 100:
+        # Convert count to a hex string for background color
+        bg_color = f"#{count:02x}{count:02x}{count:02x}"  # Background from black to white
+        
+        # Adjust the text color based on the brightness of the background
+        if count < 50:  # Dark background
+            text_color = "white"
+            button_text_color = "white"
+        else:  # Light background
+            text_color = "black"
+            button_text_color = "black"
+        
+        # Update label result with the new colors
+        label_result.configure(fg_color=bg_color, text_color=text_color)
+        
+        # Update hash password button with the new colors
+        button_hash.configure(fg_color=bg_color, text_color=button_text_color)
+
+        # Continue the fade effect
+        label_result.after(10, fade_in_label_and_button, count + 1)
 
 # Set up the main window
 root = ctk.CTk()
