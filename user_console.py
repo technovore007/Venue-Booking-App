@@ -45,24 +45,46 @@ class UserConsole(ctk.CTk):
             LoginPage().mainloop()
 
     def show_sidebar(self):
-        # Fetch past bookings from the database
+        # Assuming `user_id` is the identifier for the current user
         user_id = self.user['user_id']
-        conn = mysql.connector.connect(host='localhost', database='venue_booking_system', user='root', password='ehnd11')
-        cursor = conn.cursor()
+        
+        # Create a connection to the MySQL database
+        try:
+            connection = mysql.connector.connect(
+                host='localhost',  # your host
+                user='root',  # your database username
+                password='ehnd11',  # your database password
+                database='venue_booking_system'  # your database name
+            )
+            cursor = connection.cursor()  # Creating cursor object
 
-        query = "SELECT * FROM bookings WHERE user_id = %s AND booking_date < NOW()"
-        cursor.execute(query, (user_id,))
-        past_bookings = cursor.fetchall()
+            # Query to fetch past bookings, including venue name and formatted date
+            query = """
+                SELECT b.booking_id, v.venue_name, b.booking_date
+                FROM booking_logs b
+                JOIN venues v ON b.venue_id = v.venue_id
+                WHERE b.user_id = %s
+            """
+            
+            # Execute the query with the user_id
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchall()
 
-        if past_bookings:
-            past_bookings_str = "\n".join([f"Booking ID: {booking[0]}, Venue: {booking[1]}, Date: {booking[2]}" for booking in past_bookings])
-        else:
-            past_bookings_str = "No past bookings found."
+            if result:
+                # Format and display the past bookings
+                bookings_info = "\n".join([f"Booking ID: {booking[0]}, Venue: {booking[1]}, Date: {booking[2]}" for booking in result])
+                messagebox.showinfo("Past Bookings", bookings_info)
+            else:
+                messagebox.showinfo("Past Bookings", "No past bookings found.")
 
-        cursor.close()
-        conn.close()
+            # Close the cursor and connection
+            cursor.close()
+            connection.close()
+        
+        except mysql.connector.Error as err:
+            messagebox.showerror("Database Error", f"Error: {err}")
 
-        messagebox.showinfo("Past Bookings", past_bookings_str)
+
 
     def add_booking(self):
         messagebox.showinfo("New Booking", "Booking flow coming soon!")
