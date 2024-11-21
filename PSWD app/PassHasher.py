@@ -29,6 +29,9 @@ def hash_password():
         global current_hashed_password
         current_hashed_password = hashed_password
 
+        # Show the "Copy to Clipboard" button
+        button_copy.pack(pady=10)
+
     except Exception as e:
         messagebox.showerror("Error", f"An error occurred: {e}")
         progress_bar.stop()
@@ -46,8 +49,9 @@ def copy_to_clipboard():
 
 # Set up the main window
 root = ctk.CTk()
-root.title("Password Hasher")
-root.geometry("400x350")
+root.title("Password Hasher v1.3")
+root.geometry("850x350")  # Increase the window size to fit the long hashed password
+root.resizable(False, False)  # Make the window non-resizable
 
 # Set up a frame for better organization
 frame = ctk.CTkFrame(root)
@@ -72,9 +76,8 @@ progress_bar.pack(pady=10, fill="x")
 # Label to show the hashed password result
 label_result = ctk.CTkLabel(frame, text="", font=("Cascadia Code", 16))
 
-# Copy to Clipboard Button
+# Copy to Clipboard Button (Initially hidden)
 button_copy = ctk.CTkButton(frame, text="Copy to Clipboard", command=copy_to_clipboard)
-button_copy.pack(pady=10)
 
 # Global variable to store the current hashed password
 current_hashed_password = ""
