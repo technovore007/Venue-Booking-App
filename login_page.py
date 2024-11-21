@@ -1,84 +1,90 @@
+import tkinter as tk
 import customtkinter as ctk
-from tkinter import messagebox
 import mysql.connector
 import bcrypt
+from tkinter import messagebox
+from user_console import UserConsole  # Assuming the UserConsole class is in 'user_console.py'
 
-# Database Connection Setup
-DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'ehnd11',
-    'database': 'venue_booking_system'
-}
+# MySQL Database Connection
+def connect_db():
+    return mysql.connector.connect(
+        host="localhost", 
+        user="root", 
+        password="ehnd11", 
+        database="venue_booking_system"
+    )
 
-# Login Page Class
-class LoginPage(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        self.geometry("400x400")
-        self.title("Login Page")
-        self.resizable(False, False)
+# Function to validate the user login
+def login(user_id_entry, password_entry):
+    user_id = user_id_entry.get()
+    password = password_entry.get()
+    
+    if not user_id or not password:
+        messagebox.showwarning("Input Error", "Please fill in both fields.")
+        return
+    
+    try:
+        # Connect to the database
+        db = connect_db()
+        cursor = db.cursor(dictionary=True)
+        
+        # Fetch user details from the database
+        cursor.execute("SELECT user_id, user_name, role, pswd FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
 
-        # UI Elements
-        self.label = ctk.CTkLabel(self, text="JUIT Venue Booking System", font=("Arial", 20))
-        self.label.pack(pady=20)
-
-        self.user_id_label = ctk.CTkLabel(self, text="User ID:")
-        self.user_id_label.pack(pady=5)
-        self.user_id_entry = ctk.CTkEntry(self, width=200)
-        self.user_id_entry.pack(pady=5)
-
-        self.password_label = ctk.CTkLabel(self, text="Password:")
-        self.password_label.pack(pady=5)
-        self.password_entry = ctk.CTkEntry(self, width=200, show="*")
-        self.password_entry.pack(pady=5)
-
-        self.login_button = ctk.CTkButton(self, text="Login", command=self.login)
-        self.login_button.pack(pady=20)
-
-    def login(self):
-        user_id = self.user_id_entry.get()
-        password = self.password_entry.get()
-
-        if not user_id or not password:
-            messagebox.showwarning("Validation Error", "Please fill all fields!")
-            return
-
-        try:
-            # Database Query
-            connection = mysql.connector.connect(**DB_CONFIG)
-            cursor = connection.cursor(dictionary=True)
-            cursor.execute("SELECT user_id, role, pswd FROM users WHERE user_id = %s", (user_id,))
-            user = cursor.fetchone()
-            connection.close()
-
-            # Debugging Output
-            print(user)  # Remove this line after debugging
-
-            if not user:
-                messagebox.showerror("Error", "Invalid User ID or Password!")
-                return
-
-            # Check for 'pswd' Key
-            if 'pswd' not in user:
-                messagebox.showerror("Error", "Password data missing for this user!")
-                return
-
-            # Verify Password
-            if bcrypt.checkpw(password.encode(), user['pswd'].encode()):
-                if user['role'] == 'user':
-                    self.destroy()
-                    from user_console import UserConsole
-                    UserConsole(user).mainloop()
-                else:
-                    messagebox.showinfo("Redirect", "Admin console is under construction!")
+        if user and bcrypt.checkpw(password.encode(), user['pswd'].encode()):
+            messagebox.showinfo("Login Success", f"Welcome {user['user_name']}!")
+            
+            # Check if the user is 'user' or 'admin'
+            if user['role'].lower() == 'user':
+                UserConsole(user).mainloop()
             else:
-                messagebox.showerror("Error", "Invalid User ID or Password!")
+                # Placeholder for admin console, which will be implemented later
+                messagebox.showinfo("Admin Login", "Admin role functionality coming soon.")
+        else:
+            messagebox.showerror("Login Error", "Invalid User ID or Password.")
+        
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", f"Error: {err}")
+    
+    finally:
+        # Close the database connection
+        cursor.close()
+        db.close()
 
-        except mysql.connector.Error as e:
-            messagebox.showerror("Database Error", f"Error connecting to database: {e}")
+# Main Login Page UI
+def setup_login_page():
+    root = ctk.CTk()
+    root.title("Venue Booking App - Login")
+    root.geometry("400x300")
+    
+    # Header
+    header_frame = ctk.CTkFrame(root, height=60)
+    header_frame.pack(fill="x", padx=10, pady=10)
 
+    header_label = ctk.CTkLabel(header_frame, text="Login", font=("Arial", 24))
+    header_label.pack(pady=10)
 
+    # User ID Entry
+    user_id_label = ctk.CTkLabel(root, text="User ID", font=("Arial", 14))
+    user_id_label.pack(pady=5)
+    
+    user_id_entry = ctk.CTkEntry(root, font=("Arial", 14))
+    user_id_entry.pack(pady=5)
+
+    # Password Entry
+    password_label = ctk.CTkLabel(root, text="Password", font=("Arial", 14))
+    password_label.pack(pady=5)
+    
+    password_entry = ctk.CTkEntry(root, show="*", font=("Arial", 14))
+    password_entry.pack(pady=5)
+    
+    # Login Button
+    login_button = ctk.CTkButton(root, text="Login", font=("Arial", 14), command=lambda: login(user_id_entry, password_entry))
+    login_button.pack(pady=20)
+
+    root.mainloop()
+
+# Start the application
 if __name__ == "__main__":
-    app = LoginPage()
-    app.mainloop()
+    setup_login_page()
