@@ -21,8 +21,8 @@ def hash_password():
         # Stop the animation after hashing
         progress_bar.stop()
 
-        # Display the hashed password
-        label_result.config(text="Hashed password: " + hashed_password)
+        # Display the hashed password using configure
+        label_result.configure(text="Hashed password: " + hashed_password)
         label_result.pack(pady=10)
 
     except Exception as e:
