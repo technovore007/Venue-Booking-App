@@ -15,7 +15,7 @@ def connect_db():
     )
 
 # Function to validate the user login
-def login(user_id_entry, password_entry):
+def login(root, user_id_entry, password_entry):
     user_id = user_id_entry.get()
     password = password_entry.get()
     
@@ -35,12 +35,11 @@ def login(user_id_entry, password_entry):
         if user and bcrypt.checkpw(password.encode(), user['pswd'].encode()):
             messagebox.showinfo("Login Success", f"Welcome {user['user_name']}!")
             
-            # Check if the user is 'user' or 'admin'
-            if user['role'].lower() == 'user':
-                UserConsole(user).mainloop()
-            else:
-                # Placeholder for admin console, which will be implemented later
-                messagebox.showinfo("Admin Login", "Admin role functionality coming soon.")
+            # Close the login window
+            root.destroy()
+            
+            # Launch user console
+            UserConsole(user).mainloop()
         else:
             messagebox.showerror("Login Error", "Invalid User ID or Password.")
         
@@ -80,7 +79,12 @@ def setup_login_page():
     password_entry.pack(pady=5)
     
     # Login Button
-    login_button = ctk.CTkButton(root, text="Login", font=("Arial", 14), command=lambda: login(user_id_entry, password_entry))
+    login_button = ctk.CTkButton(
+        root, 
+        text="Login", 
+        font=("Arial", 14), 
+        command=lambda: login(root, user_id_entry, password_entry)
+    )
     login_button.pack(pady=20)
 
     root.mainloop()
