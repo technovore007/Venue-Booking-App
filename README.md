@@ -174,40 +174,65 @@ USE venue_booking_system;
 
 -- Create Users Table
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_name VARCHAR(100) NOT NULL,
+    user_id VARCHAR(10) PRIMARY KEY,
+    user_name VARCHAR(50) NOT NULL,
     pswd VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL
+    email_id VARCHAR(60) NOT NULL UNIQUE,
+    role ENUM('user', 'admin') NOT NULL
 );
 
 -- Create Venues Table
 CREATE TABLE venues (
-    venue_id INT AUTO_INCREMENT PRIMARY KEY,
-    venue_name VARCHAR(100) NOT NULL,
-    capacity INT,
-    location VARCHAR(100)
+    venue_id VARCHAR(4) PRIMARY KEY,
+    venue_name VARCHAR(50) NOT NULL,
+    type ENUM('Classroom', 'Auditorium', 'Lecture Theatre', 'Tutorial Room', 'Meeting Room', 'Laboratory') NOT NULL,
+    capacity SMALLINT NOT NULL,
+    location VARCHAR(50) NOT NULL
 );
 
--- Create Bookings Table
-CREATE TABLE bookings (
+-- Create Booking Requests Table
+CREATE TABLE booking_requests (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    venue_id INT,
-    booking_date DATE,
-    start_time TIME,
+    user_id VARCHAR(10) NOT NULL,
+    venue_id VARCHAR(4) NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
     end_time TIME,
-    status VARCHAR(50),
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (venue_id) REFERENCES venues(venue_id)
+    status ENUM('pending', 'approved', 'rejected') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE CASCADE
+);
+
+-- Create Approved Bookings Table
+CREATE TABLE approved_bookings (
+    approval_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id VARCHAR(10),
+    approval_date DATE,
+    user_id VARCHAR(10) NOT NULL,
+    venue_id VARCHAR(4) NOT NULL,
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME,
+    status ENUM('Approved', 'Rejected'),
+    comments VARCHAR(1024),
+    FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE CASCADE
 );
 
 -- Create Booking Logs Table
 CREATE TABLE booking_logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
-    booking_id INT,
-    timestamp DATETIME,
-    FOREIGN KEY (booking_id) REFERENCES bookings(booking_id)
+    user_id VARCHAR(10),
+    venue_id VARCHAR(4),
+    booking_date DATE,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    status ENUM('Expired', 'Canceled') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE SET NULL
 );
+
 ```
 
 ### 4. **Configure Database Connection**
