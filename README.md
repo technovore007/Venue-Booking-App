@@ -1,5 +1,3 @@
-Here's an engaging and detailed **README** for your project, explaining all aspects from the beginning to the end. You can use this as a template:
-
 ---
 
 # **Venue Booking System**
@@ -243,5 +241,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Thank you for checking out the Venue Booking System!** We hope this project helps simplify venue booking and management. Feel free to contribute and make it better! 😄
 
 ---
-
-You can add any more details like how to use the **Admin Panel** or further technical notes about the implementation of the system. Let me know if you want me to modify or add any section! 😊
