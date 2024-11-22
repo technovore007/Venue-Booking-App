@@ -234,11 +234,52 @@ CREATE TABLE booking_logs (
 );
 
 ```
+You can add the following text to your GitHub page description to include the implementation of Scheduled Events in MySQL 8.0:
+
+---
+
+### Implementing Scheduled Events in MySQL 8.0
+
+To implement scheduled events in MySQL 8.0 using DataGrip, follow these steps:
+
+1. **Enable the Event Scheduler**
+   MySQL’s Event Scheduler must be enabled. To check and enable it:
+   - In DataGrip, open the Query Console for your MySQL database.
+   - Run the following query to check if the event scheduler is active:
+     ```sql
+     SHOW VARIABLES LIKE 'event_scheduler';
+     ```
+   - If the result shows OFF, enable it by running:
+     ```sql
+     SET GLOBAL event_scheduler = ON;
+     ```
+
+2. **Write the Scheduled Event**
+   A scheduled event needs to be defined in SQL. Here's an example to automate moving expired bookings from `approved_bookings` to `booking_logs`:
+   - In the Query Console, write the following SQL to create the event:
+     ```sql
+     CREATE EVENT move_expired_bookings
+     ON SCHEDULE EVERY 1 HOUR
+     DO
+     BEGIN
+         INSERT INTO booking_logs (log_id, user_id, venue_id, booking_date, start_time, end_time, status)
+         SELECT approval_id, user_id, venue_id, booking_date, start_time, end_time, 'Expired'
+         FROM approved_bookings
+         WHERE booking_date < CURDATE() 
+         OR (booking_date = CURDATE() AND end_time < CURTIME());
+         
+         DELETE FROM approved_bookings
+         WHERE booking_date < CURDATE() 
+         OR (booking_date = CURDATE() AND end_time < CURTIME());
+     END;
+     ```
+
+   - Execute the query to create the event.
+
+---
 
 ### 4. **Configure Database Connection**
 In the Python code, ensure that the **MySQL credentials** in the `common.py` file are correctly set to your local MySQL database connection.
-
----
 
 ## **Usage**
 
