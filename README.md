@@ -234,10 +234,7 @@ CREATE TABLE booking_logs (
 );
 
 ```
-You can add the following text to your GitHub page description to include the implementation of Scheduled Events in MySQL 8.0:
-
 ---
-
 ### Implementing Scheduled Events in MySQL 8.0
 
 To implement scheduled events in MySQL 8.0 using DataGrip, follow these steps:
