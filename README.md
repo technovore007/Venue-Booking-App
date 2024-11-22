@@ -83,44 +83,66 @@ The project uses a **MySQL** database with the following key tables:
 ### 1. **Users**
 Stores user information such as login credentials and roles.
 
-| Column Name    | Type         | Description                      |
-|----------------|--------------|----------------------------------|
-| user_id        | INT          | Primary Key, Unique User ID      |
-| user_name      | VARCHAR(100) | User’s full name                 |
-| pswd           | VARCHAR(255) | Hashed password                  |
-| role           | VARCHAR(50)  | Role (admin or regular user)     |
+| Column Name | Type                | Description                                  |
+|-------------|---------------------|----------------------------------------------|
+| user_id     | varchar(10)          | Primary Key, Unique User ID                 |
+| user_name   | varchar(50)          | User’s full name                             |
+| pswd        | varchar(255)         | Hashed password                              |
+| email_id    | varchar(60)          | Unique email ID                             |
+| role        | enum('user', 'admin')| Role (either 'user' or 'admin')             |
 
 ### 2. **Venues**
 Stores details of each venue available for booking.
 
-| Column Name    | Type         | Description                      |
-|----------------|--------------|----------------------------------|
-| venue_id       | INT          | Primary Key, Unique Venue ID     |
-| venue_name     | VARCHAR(100) | Venue name (e.g., Auditorium)    |
-| capacity       | INT          | Venue seating capacity           |
-| location       | VARCHAR(100) | Venue location (building, floor) |
+| Column Name  | Type                                                                 | Description                                           |
+|--------------|----------------------------------------------------------------------|-------------------------------------------------------|
+| venue_id     | varchar(4)                                                           | Primary Key, Unique Venue ID                         |
+| venue_name   | varchar(50)                                                          | Venue name (e.g., Auditorium, Classroom)             |
+| type         | enum('Classroom', 'Auditorium', 'Lecture Theatre', 'Tutorial Room', 'Meeting Room', 'Laboratory') | Type of venue (classroom, auditorium, etc.)          |
+| capacity     | smallint                                                             | Venue seating capacity                               |
+| location     | varchar(50)                                                          | Venue location (e.g., building, floor)               |
 
-### 3. **Bookings**
-Tracks the booking requests by users.
+### 3. **Booking Requests**
+Tracks the booking requests made by users.
 
-| Column Name    | Type         | Description                      |
-|----------------|--------------|----------------------------------|
-| booking_id     | INT          | Primary Key, Unique Booking ID   |
-| user_id        | INT          | Foreign Key to `Users`           |
-| venue_id       | INT          | Foreign Key to `Venues`          |
-| booking_date   | DATE         | The date of the booking          |
-| start_time     | TIME         | Start time of the booking        |
-| end_time       | TIME         | End time of the booking          |
-| status         | VARCHAR(50)  | Status (approved, pending, canceled) |
+| Column Name  | Type                                  | Description                                            |
+|--------------|---------------------------------------|--------------------------------------------------------|
+| booking_id   | int                                   | Primary Key, Unique Booking ID                         |
+| user_id      | varchar(10)                           | Foreign Key to `Users`                                 |
+| venue_id     | varchar(4)                            | Foreign Key to `Venues`                                |
+| date         | date                                  | Date of the booking                                   |
+| start_time   | time                                  | Start time of the booking                              |
+| end_time     | time                                  | End time of the booking (optional)                     |
+| status       | enum('pending', 'approved', 'rejected')| Booking status (pending, approved, rejected)           |
 
 ### 4. **Booking Logs**
-Stores past booking data for archiving.
+Stores past booking data for archival purposes.
 
-| Column Name    | Type         | Description                      |
-|----------------|--------------|----------------------------------|
-| log_id         | INT          | Primary Key, Unique Log ID       |
-| booking_id     | INT          | Foreign Key to `Bookings`        |
-| timestamp      | DATETIME     | Timestamp of when the record was archived |
+| Column Name  | Type                                  | Description                                            |
+|--------------|---------------------------------------|--------------------------------------------------------|
+| log_id       | int                                   | Primary Key, Unique Log ID                             |
+| user_id      | varchar(10)                           | Foreign Key to `Users`                                 |
+| venue_id     | varchar(4)                            | Foreign Key to `Venues`                                |
+| booking_date | date                                  | Date of the booking                                   |
+| start_time   | time                                  | Start time of the booking                              |
+| end_time     | time                                  | End time of the booking                                |
+| status       | enum('Expired', 'Canceled')           | Status of the booking log (Expired, Canceled)          |
+
+### 5. **Approved Bookings**
+Stores data on approved booking requests.
+
+| Column Name  | Type                                  | Description                                            |
+|--------------|---------------------------------------|--------------------------------------------------------|
+| approval_id  | int                                   | Primary Key, Unique Approval ID                        |
+| admin_id     | varchar(10)                           | Foreign Key to `Users` (admin who approved the booking)|
+| approval_date| date                                  | Date of approval                                      |
+| user_id      | varchar(10)                           | Foreign Key to `Users`                                 |
+| venue_id     | varchar(4)                            | Foreign Key to `Venues`                                |
+| booking_date | date                                  | Date of the booking                                   |
+| start_time   | time                                  | Start time of the booking                              |
+| end_time     | time                                  | End time of the booking (optional)                     |
+| status       | enum('Approved', 'Rejected')          | Status of the approved booking (Approved, Rejected)    |
+| comments     | varchar(1024)                         | Optional comments on the booking approval              |
 
 ---
 
