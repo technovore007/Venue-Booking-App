@@ -7,9 +7,9 @@ from common import connect_db
 class UserConsole(ctk.CTk):
     def __init__(self, user):
         super().__init__()
-        self.geometry("600x600")
+        self.geometry("650x600")
         self.title("User Console")
-        self.resizable(False, False)
+        self.resizable(True, True)
 
         self.user = user  # User dictionary containing user_id and user_name
         self.setup_ui()
@@ -99,21 +99,51 @@ class UserConsole(ctk.CTk):
         try:
             db = connect_db()
             cursor = db.cursor()
+            # Query to fetch data from both tables
             query = """
-                SELECT v.Venue_Name, b.booking_date, b.start_time, b.end_time 
-                FROM approved_bookings b 
-                JOIN venues v ON b.venue_id = v.Venue_id 
-                WHERE b.user_id = %s AND b.status = 'approved'
+                SELECT 
+                    v.Venue_Name, 
+                    b.Date AS booking_date, 
+                    b.start_time, 
+                    b.end_time, 
+                    b.status 
+                FROM booking_requests b
+                JOIN venues v ON b.Venue_id = v.Venue_id
+                WHERE b.user_id = %s
+                UNION
+                SELECT 
+                    v.Venue_Name, 
+                    b.booking_date, 
+                    b.start_time, 
+                    b.end_time, 
+                    b.status 
+                FROM approved_bookings b
+                JOIN venues v ON b.venue_id = v.Venue_id
+                WHERE b.user_id = %s
             """
-            cursor.execute(query, (self.user['user_id'],))
+            cursor.execute(query, (self.user['user_id'], self.user['user_id']))
             bookings = cursor.fetchall()
 
+            # Format the bookings for display
             if bookings:
-                booking_info = "\n".join([
-                    f"Venue: {b[0]}, Date: {b[1]}, Time: {b[2]} - {b[3]}" 
-                    for b in bookings
-                ])
-                self.current_bookings_list.configure(text=booking_info)
+                booking_info = ""
+                for b in bookings:
+                    venue, date, start_time, end_time, status = b
+                    # Apply color formatting for status
+                    if status.lower() == "approved":
+                        status_text = f"[green]{status}[/green]"
+                    elif status.lower() == "rejected":
+                        status_text = f"[red]{status}[/red]"
+                    elif status.lower() == "pending":
+                        status_text = f"[orange]{status}[/orange]"
+                    else:
+                        status_text = status  # Default, in case of unexpected status
+
+                    booking_info += (
+                        f"Venue: {venue}, Date: {date}, From: {start_time} To: {end_time}, "
+                        f"Status: {status_text}\n"
+                    )
+                self.current_bookings_list.configure(text=booking_info.strip())
             else:
                 self.current_bookings_list.configure(text="No current bookings found.")
 
