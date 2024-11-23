@@ -174,46 +174,109 @@ USE venue_booking_system;
 
 -- Create Users Table
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_name VARCHAR(100) NOT NULL,
+    user_id VARCHAR(10) PRIMARY KEY,
+    user_name VARCHAR(50) NOT NULL,
     pswd VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL
+    email_id VARCHAR(60) NOT NULL UNIQUE,
+    role ENUM('user', 'admin') NOT NULL
 );
 
 -- Create Venues Table
 CREATE TABLE venues (
-    venue_id INT AUTO_INCREMENT PRIMARY KEY,
-    venue_name VARCHAR(100) NOT NULL,
-    capacity INT,
-    location VARCHAR(100)
+    venue_id VARCHAR(4) PRIMARY KEY,
+    venue_name VARCHAR(50) NOT NULL,
+    type ENUM('Classroom', 'Auditorium', 'Lecture Theatre', 'Tutorial Room', 'Meeting Room', 'Laboratory') NOT NULL,
+    capacity SMALLINT NOT NULL,
+    location VARCHAR(50) NOT NULL
 );
 
--- Create Bookings Table
-CREATE TABLE bookings (
+-- Create Booking Requests Table
+CREATE TABLE booking_requests (
     booking_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    venue_id INT,
-    booking_date DATE,
-    start_time TIME,
+    user_id VARCHAR(10) NOT NULL,
+    venue_id VARCHAR(4) NOT NULL,
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
     end_time TIME,
-    status VARCHAR(50),
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (venue_id) REFERENCES venues(venue_id)
+    status ENUM('pending', 'approved', 'rejected') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE CASCADE
+);
+
+-- Create Approved Bookings Table
+CREATE TABLE approved_bookings (
+    approval_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id VARCHAR(10),
+    approval_date DATE,
+    user_id VARCHAR(10) NOT NULL,
+    venue_id VARCHAR(4) NOT NULL,
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME,
+    status ENUM('Approved', 'Rejected'),
+    comments VARCHAR(1024),
+    FOREIGN KEY (admin_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE CASCADE
 );
 
 -- Create Booking Logs Table
 CREATE TABLE booking_logs (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
-    booking_id INT,
-    timestamp DATETIME,
-    FOREIGN KEY (booking_id) REFERENCES bookings(booking_id)
+    user_id VARCHAR(10),
+    venue_id VARCHAR(4),
+    booking_date DATE,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    status ENUM('Expired', 'Canceled') NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (venue_id) REFERENCES venues(venue_id) ON DELETE SET NULL
 );
+
 ```
+---
+### Implementing Scheduled Events in MySQL 8.0
+
+To implement scheduled events in MySQL 8.0 using DataGrip, follow these steps:
+
+1. **Enable the Event Scheduler**
+   MySQL’s Event Scheduler must be enabled. To check and enable it:
+   - In DataGrip, open the Query Console for your MySQL database.
+   - Run the following query to check if the event scheduler is active:
+     ```sql
+     SHOW VARIABLES LIKE 'event_scheduler';
+     ```
+   - If the result shows OFF, enable it by running:
+     ```sql
+     SET GLOBAL event_scheduler = ON;
+     ```
+
+2. **Write the Scheduled Event**
+   A scheduled event needs to be defined in SQL. Here's an example to automate moving expired bookings from `approved_bookings` to `booking_logs`:
+   - In the Query Console, write the following SQL to create the event:
+     ```sql
+     CREATE EVENT move_expired_bookings
+     ON SCHEDULE EVERY 1 HOUR
+     DO
+     BEGIN
+         INSERT INTO booking_logs (log_id, user_id, venue_id, booking_date, start_time, end_time, status)
+         SELECT approval_id, user_id, venue_id, booking_date, start_time, end_time, 'Expired'
+         FROM approved_bookings
+         WHERE booking_date < CURDATE() 
+         OR (booking_date = CURDATE() AND end_time < CURTIME());
+         
+         DELETE FROM approved_bookings
+         WHERE booking_date < CURDATE() 
+         OR (booking_date = CURDATE() AND end_time < CURTIME());
+     END;
+     ```
+
+   - Execute the query to create the event.
+
+---
 
 ### 4. **Configure Database Connection**
 In the Python code, ensure that the **MySQL credentials** in the `common.py` file are correctly set to your local MySQL database connection.
-
----
 
 ## **Usage**
 
