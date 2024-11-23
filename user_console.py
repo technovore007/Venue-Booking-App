@@ -4,6 +4,8 @@ from tkinter import messagebox
 import mysql.connector
 from common import connect_db
 from datetime import datetime
+from tkcalendar import Calendar
+from tkinter import Toplevel, Label, Button, messagebox
 
 class UserConsole(ctk.CTk):
     def __init__(self, user):
@@ -94,7 +96,134 @@ class UserConsole(ctk.CTk):
                 db.close()
 
     def add_booking(self):
-        messagebox.showinfo("New Booking", "Booking flow coming soon!")
+        def validate_and_confirm():
+            """Validates the booking details and checks for clashes."""
+            venue_type = venue_type_var.get()
+            venue_name = venue_name_var.get()
+            booking_date = cal.get_date()
+            start_time = f"{start_hour.get()}:{start_minute.get()}:00"
+            end_time = f"{end_hour.get()}:{end_minute.get()}:00"
+
+            if not venue_type or not venue_name or not booking_date:
+                messagebox.showerror("Validation Error", "All fields are required!")
+                return
+
+            if not (start_hour.get().isdigit() and start_minute.get().isdigit() and end_hour.get().isdigit() and end_minute.get().isdigit()):
+                messagebox.showerror("Validation Error", "Invalid time format!")
+                return
+
+            # Convert times for comparison
+            start_dt = datetime.strptime(start_time, '%H:%M:%S')
+            end_dt = datetime.strptime(end_time, '%H:%M:%S')
+            if start_dt >= end_dt:
+                messagebox.showerror("Validation Error", "Start time must be before end time!")
+                return
+
+            try:
+                # Fetch venue ID based on name
+                cursor.execute("SELECT Venue_id FROM venues WHERE Venue_Name = %s", (venue_name,))
+                venue_id = cursor.fetchone()
+                if not venue_id:
+                    messagebox.showerror("Validation Error", "Invalid venue selected!")
+                    return
+                venue_id = venue_id[0]
+
+                # Check for clashes in booking_requests and approved_bookings
+                query = """
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT Date, start_time, end_time FROM booking_requests WHERE Venue_id = %s AND status IN ('PENDING', 'APPROVED')
+                        UNION
+                        SELECT booking_date AS Date, start_time, end_time FROM approved_bookings WHERE Venue_id = %s
+                    ) AS combined
+                    WHERE Date = %s
+                    AND (
+                        (%s BETWEEN start_time AND end_time)
+                        OR (%s BETWEEN start_time AND end_time)
+                        OR (start_time BETWEEN %s AND %s)
+                    )
+                """
+                cursor.execute(query, (venue_id, venue_id, booking_date, start_time, end_time, start_time, end_time))
+                clashes = cursor.fetchone()[0]
+
+                if clashes > 0:
+                    messagebox.showerror("Booking Clash", "The selected time and date are already booked.")
+                    return
+
+                # Show confirmation
+                confirmation = messagebox.askyesno(
+                    "Confirm Booking",
+                    f"Venue: {venue_name}\nDate: {booking_date}\nTime: {start_time} to {end_time}\n\nConfirm Booking?"
+                )
+                if not confirmation:
+                    return
+
+                # Insert booking request
+                insert_query = """
+                    INSERT INTO booking_requests (User_id, Venue_id, Date, start_time, end_time, status)
+                    VALUES (%s, %s, %s, %s, %s, 'PENDING')
+                """
+                cursor.execute(insert_query, (self.user['user_id'], venue_id, booking_date, start_time, end_time))
+                db.commit()
+
+                messagebox.showinfo("Booking Success", "Your booking request has been successfully placed!")
+                add_booking_window.destroy()
+
+            except mysql.connector.Error as err:
+                messagebox.showerror("Database Error", f"Error: {err}")
+
+        # Open a new window for adding a booking
+        add_booking_window = Toplevel(self)
+        add_booking_window.title("Add Booking")
+        add_booking_window.geometry("500x500")
+
+        # Database connection
+        db = connect_db()
+        cursor = db.cursor()
+
+        # UI Components
+        Label(add_booking_window, text="Select Venue Type").pack()
+        venue_type_var = ctk.StringVar()
+        venue_type_menu = ctk.CTkOptionMenu(
+            add_booking_window, variable=venue_type_var,
+            values=['Classroom', 'Auditorium', 'Lecture Theatre', 'Tutorial Room', 'Meeting Room', 'Laboratory']
+        )
+        venue_type_menu.pack()
+
+        def populate_venue_names(*args):
+            """Populate venue names based on selected type."""
+            selected_type = venue_type_var.get()
+            cursor.execute("SELECT Venue_Name FROM venues WHERE Type = %s", (selected_type,))
+            venues = [row[0] for row in cursor.fetchall()]
+            venue_name_menu.configure(values=venues)
+            venue_name_var.set("")
+
+        venue_type_var.trace("w", populate_venue_names)
+
+        Label(add_booking_window, text="Select Venue Name").pack()
+        venue_name_var = ctk.StringVar()
+        venue_name_menu = ctk.CTkOptionMenu(add_booking_window, variable=venue_name_var, values=[])
+        venue_name_menu.pack()
+
+        Label(add_booking_window, text="Select Date").pack()
+        cal = Calendar(add_booking_window, date_pattern='yyyy-mm-dd')
+        cal.pack()
+
+        Label(add_booking_window, text="Start Time (HH:MM)").pack()
+        start_hour = ctk.StringVar(value="09")
+        start_minute = ctk.StringVar(value="00")
+        ctk.CTkEntry(add_booking_window, textvariable=start_hour, width=30).pack(side="left")
+        ctk.CTkEntry(add_booking_window, textvariable=start_minute, width=30).pack(side="left")
+
+        Label(add_booking_window, text="End Time (HH:MM)").pack()
+        end_hour = ctk.StringVar(value="10")
+        end_minute = ctk.StringVar(value="00")
+        ctk.CTkEntry(add_booking_window, textvariable=end_hour, width=30).pack(side="left")
+        ctk.CTkEntry(add_booking_window, textvariable=end_minute, width=30).pack(side="left")
+
+        Button(add_booking_window, text="Submit Booking", command=validate_and_confirm).pack()
+
+        add_booking_window.mainloop()
 
     def load_current_bookings(self):
         try:
