@@ -10,7 +10,7 @@ from tkinter import Toplevel, Label, Button, messagebox
 class UserConsole(ctk.CTk):
     def __init__(self, user):
         super().__init__()
-        self.geometry("650x600")
+        self.geometry("850x800")
         self.title("User Console")
         self.resizable(True, True)
 
@@ -167,6 +167,7 @@ class UserConsole(ctk.CTk):
                 db.commit()
 
                 messagebox.showinfo("Booking Success", "Your booking request has been successfully placed!")
+                self.load_current_bookings()
                 add_booking_window.destroy()
 
             except mysql.connector.Error as err:
@@ -174,7 +175,7 @@ class UserConsole(ctk.CTk):
 
         # Open a new window for adding a booking
         add_booking_window = Toplevel(self)
-        add_booking_window.title("Add Booking")
+        add_booking_window.title("Create Booking")
         add_booking_window.geometry("500x500")
 
         # Database connection
