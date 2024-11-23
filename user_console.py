@@ -3,6 +3,7 @@ import customtkinter as ctk
 from tkinter import messagebox
 import mysql.connector
 from common import connect_db
+from datetime import datetime
 
 class UserConsole(ctk.CTk):
     def __init__(self, user):
@@ -124,26 +125,36 @@ class UserConsole(ctk.CTk):
             cursor.execute(query, (self.user['user_id'], self.user['user_id']))
             bookings = cursor.fetchall()
 
-            # Format the bookings for display
+            # Clear previous labels
+            for widget in self.current_bookings_list.winfo_children():
+                widget.destroy()
+
             if bookings:
-                booking_info = ""
                 for b in bookings:
                     venue, date, start_time, end_time, status = b
-                    # Apply color formatting for status
-                    if status.lower() == "approved":
-                        status_text = f"[green]{status}[/green]"
-                    elif status.lower() == "rejected":
-                        status_text = f"[red]{status}[/red]"
-                    elif status.lower() == "pending":
-                        status_text = f"[orange]{status}[/orange]"
-                    else:
-                        status_text = status  # Default, in case of unexpected status
+                    
+                    # Convert start_time and end_time to AM/PM format
+                    start_time = datetime.strptime(str(start_time), '%H:%M:%S').strftime('%I:%M %p')
+                    end_time = datetime.strptime(str(end_time), '%H:%M:%S').strftime('%I:%M %p')
 
-                    booking_info += (
-                        f"Venue: {venue}, Date: {date}, From: {start_time} To: {end_time}, "
-                        f"Status: {status_text}\n"
-                    )
-                self.current_bookings_list.configure(text=booking_info.strip())
+                    # Determine color for the status
+                    if status.lower() == "approved":
+                        color = "green"
+                    elif status.lower() == "rejected":
+                        color = "red"
+                    elif status.lower() == "pending":
+                        color = "orange"
+                    else:
+                        color = "black"  # Default color
+
+                    # Create a new label for each booking
+                    booking_text = f"Venue: {venue}, Date: {date}, From: {start_time} To: {end_time}, Status: "
+                    booking_label = ctk.CTkLabel(self.current_bookings_list, text=booking_text, font=("Arial", 15))
+                    booking_label.pack(anchor="w")
+
+                    # Add the status with colored text
+                    status_label = ctk.CTkLabel(self.current_bookings_list, text=status, font=("Arial", 15), text_color=color)
+                    status_label.pack(anchor="w")
             else:
                 self.current_bookings_list.configure(text="No current bookings found.")
 
