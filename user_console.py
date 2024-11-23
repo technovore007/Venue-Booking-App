@@ -177,6 +177,7 @@ class UserConsole(ctk.CTk):
         add_booking_window = Toplevel(self)
         add_booking_window.title("Create Booking")
         add_booking_window.geometry("500x500")
+        add_booking_window.resizable(False, False)
 
         # Database connection
         db = connect_db()
